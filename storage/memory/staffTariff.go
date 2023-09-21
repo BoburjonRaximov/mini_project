@@ -12,19 +12,19 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-type staffTarifRepo struct {
+type staffTariffRepo struct {
 	db *pgxpool.Pool
 }
 
-func NewStaffTarifRepo(db *pgxpool.Pool) *staffTarifRepo {
-	return &staffTarifRepo{db: db}
+func NewStaffTariffRepo(db *pgxpool.Pool) *staffTariffRepo {
+	return &staffTariffRepo{db: db}
 }
 
-func (s *staffTarifRepo) CreateStaffTarif(req models.CreateStaffTarif) (string, error) {
+func (s *staffTariffRepo) CreateStaffTariff(req models.CreateStaffTariff) (string, error) {
 	id := uuid.NewString()
 	query :=
 		`INSERT INTO 
-	staffTarifs(id,name,type,amountForCash,amountForCard,createdAt,foundedAt) 
+	staffTariffs(id,name,type,amountForCash,amountForCard,createdAt,foundedAt) 
 VALUES($1,$2,$3,$4,$5,$6,$7)`
 	_, err := s.db.Exec(context.Background(), query,
 		id,
@@ -41,9 +41,9 @@ VALUES($1,$2,$3,$4,$5,$6,$7)`
 	return id, nil
 }
 
-func (s *staffTarifRepo) UpdateStaffTarif(req models.StaffTarif) (string, error) {
+func (s *staffTariffRepo) UpdateStaffTariff(req models.StaffTariff) (string, error) {
 	query := `
-	update staffTarifs
+	update staffTariffs
 	set name=$2,type=$3,amountForCash,AmountForCard=$5,createdAt=$6,foundedAt=$7
 	where id=$1`
 	resp, err := s.db.Exec(context.Background(), query,
@@ -63,28 +63,28 @@ func (s *staffTarifRepo) UpdateStaffTarif(req models.StaffTarif) (string, error)
 	}
 	return "updated", nil
 }
-func (s *staffTarifRepo) GetStaffTarif(req models.IdRequestStaffTarif) (models.StaffTarif, error) {
+func (s *staffTariffRepo) GetStaffTariff(req models.IdRequestStaffTariff) (models.StaffTariff, error) {
 
 	query := `
-	select * from staffTarif
+	select * from staffTariffs
 	where id=$1`
-	staffTarif := models.StaffTarif{}
+	staffTariff := models.StaffTariff{}
 	err := s.db.QueryRow(context.Background(), query, req.Id).Scan(
-		&staffTarif.Id,
-		&staffTarif.Name,
-		&staffTarif.Type,
-		&staffTarif.AmountForCash,
-		&staffTarif.AmountForCard,
-		&staffTarif.CreatedAt,
-		&staffTarif.FoundedAt,
+		&staffTariff.Id,
+		&staffTariff.Name,
+		&staffTariff.Type,
+		&staffTariff.AmountForCash,
+		&staffTariff.AmountForCard,
+		&staffTariff.CreatedAt,
+		&staffTariff.FoundedAt,
 	)
 	if err != nil {
 		fmt.Println("error scan", err.Error())
 	}
-	return staffTarif, errors.New("not found")
+	return staffTariff, errors.New("not found")
 }
 
-func (st *staffTarifRepo) GetAllStaffTarif(req models.GetAllStaffTarifRequest) (resp models.GetAllStaffTarif, err error) {
+func (st *staffTariffRepo) GetAllStaffTariff(req models.GetAllStaffTariffRequest) (resp models.GetAllStaffTariff, err error) {
 	var (
 		params  = make(map[string]interface{})
 		filter  = "WHERE true "
@@ -94,7 +94,7 @@ func (st *staffTarifRepo) GetAllStaffTarif(req models.GetAllStaffTarifRequest) (
 	)
 	s := `
 	SELECT *
-	FROM staffTarifs
+	FROM staffTariffs
 	`
 	if req.Search != "" {
 		filter += ` AND name ILIKE '%@search%' `
@@ -118,20 +118,20 @@ func (st *staffTarifRepo) GetAllStaffTarif(req models.GetAllStaffTarifRequest) (
 	defer rows.Close()
 
 	for rows.Next() {
-		var staffTarif models.StaffTarif
+		var staffTariff models.StaffTariff
 		err := rows.Scan()
 		if err != nil {
 			return resp, err
 		}
-		resp.StaffTarifs = append(resp.StaffTarifs, staffTarif)
-		resp.Count = len(resp.StaffTarifs)
+		resp.StaffTariffs = append(resp.StaffTariffs, staffTariff)
+		resp.Count = len(resp.StaffTariffs)
 	}
 	return resp, nil
 }
 
-func (s *staffTarifRepo) DeleteStaffTarif(req models.IdRequestStaffTarif) (string, error) {
+func (s *staffTariffRepo) DeleteStaffTariff(req models.IdRequestStaffTariff) (string, error) {
 	query := `
-	delete from staffTarifs
+	delete from staffTariffs
 	where id=$1 `
 	resp, err := s.db.Exec(context.Background(), query,
 		req.Id,

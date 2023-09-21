@@ -19,7 +19,7 @@ func NewBranchRepo(db *pgxpool.Pool) *branchRepo {
 	return &branchRepo{db: db}
 }
 
-// CreateBranch method creates new branch with given name and address and returns its id
+
 func (b *branchRepo) CreateBranch(req models.CreateBranch) (string, error) {
 	fmt.Println("branch create")
 	id := uuid.NewString()
@@ -35,7 +35,7 @@ func (b *branchRepo) CreateBranch(req models.CreateBranch) (string, error) {
 	)
 	if err != nil {
 		fmt.Println("error:", err.Error())
-		return "", err
+		return "error exec", err
 	}
 	return id, nil
 }

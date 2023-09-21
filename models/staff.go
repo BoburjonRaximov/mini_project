@@ -21,10 +21,10 @@ type Staff struct {
 }
 
 type GetAllStaffRequest struct {
-	Page  int
-	Limit int
+	Page   int
+	Limit  int
 	Search string
-	Name  string
+	Name   string
 }
 
 type GetAllStaff struct {
@@ -38,4 +38,18 @@ type IdRequestStaff struct {
 type ChangeBalanceStaff struct {
 	Id     string
 	Amount float64
+}
+
+type UpdateBalanceRequest struct {
+	SaleId          string
+	TransactionType string
+	SourceType      string
+	Cashier         StaffIdAmount
+	ShopAssisstant  StaffIdAmount
+	Text            string
+}
+
+type StaffIdAmount struct {
+	StaffId string
+	Amount  float32
 }

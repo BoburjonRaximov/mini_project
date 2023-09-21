@@ -10,11 +10,11 @@ import (
 )
 
 type strg struct {
-	db         *pgxpool.Pool
-	branch     *branchRepo
-	staff      *staffRepo
-	staffTarif *staffTarifRepo
-	sale       *saleRepo
+	db               *pgxpool.Pool
+	branch           *branchRepo
+	staff            *staffRepo
+	staffTariff      *staffTariffRepo
+	sale             *saleRepo
 	staffTransaction *staffTransactionRepo
 }
 
@@ -43,16 +43,16 @@ func (s *strg) Staff() storage.StaffsI {
 }
 
 // StaffTarif implements storage.StorageI.
-func (s *strg) StaffTarif() storage.StaffTarifsI {
-	if s.staffTarif == nil {
-		s.staffTarif = NewStaffTarifRepo(s.db)
+func (s *strg) StaffTariff() storage.StaffTariffsI {
+	if s.staffTariff == nil {
+		s.staffTariff = NewStaffTariffRepo(s.db)
 	}
-	return s.staffTarif
+	return s.staffTariff
 }
 
 // StaffTransaction implements storage.StorageI.
 func (s *strg) StaffTransaction() storage.StaffTransactionI {
-	if s.staffTransaction==nil{
+	if s.staffTransaction == nil {
 		s.staffTransaction = NewStaffTransactionRepo(s.db)
 	}
 	return s.staffTransaction

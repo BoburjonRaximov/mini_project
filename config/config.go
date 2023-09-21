@@ -36,7 +36,7 @@ func Load() *Config {
 		Limit:   10,
 		Page:    1,
 		Methods: []string{"create", "update", "get", "getAll", "delete"},
-		Objects: []string{"branch"},
+		Objects: []string{"branch", "staff", "staffTariff", "sale", "staffTransaction"},
 	}
 }
 
@@ -70,7 +70,7 @@ func (ConfigPostgres) Staff() storage.StaffsI {
 }
 
 // StaffTarif implements storage.StorageI.
-func (ConfigPostgres) StaffTarif() storage.StaffTarifsI {
+func (ConfigPostgres) StaffTarif() storage.StaffTariffsI {
 	panic("unimplemented")
 }
 

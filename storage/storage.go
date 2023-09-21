@@ -7,7 +7,7 @@ type StorageI interface {
 	Staff() StaffsI
 	StaffTransaction() StaffTransactionI
 	Sale() SalesI
-	StaffTarif() StaffTarifsI
+	StaffTariff() StaffTariffsI
 }
 
 type BranchesI interface {
@@ -27,13 +27,13 @@ type StaffsI interface {
 	GetAllStaff(models.GetAllStaffRequest) (models.GetAllStaff, error)
 	DeleteStaff(models.IdRequestStaff) (string, error)
 }
-type StaffTarifsI interface {
+type StaffTariffsI interface {
 	//CreateBranch method creates new branch with given name and address and returns its id
-	CreateStaffTarif(models.CreateStaffTarif) (string, error)
-	UpdateStaffTarif(models.StaffTarif) (string, error)
-	GetStaffTarif(models.IdRequestStaffTarif) (models.StaffTarif, error)
-	GetAllStaffTarif(models.GetAllStaffTarifRequest) (models.GetAllStaffTarif, error)
-	DeleteStaffTarif(models.IdRequestStaffTarif) (string, error)
+	CreateStaffTariff(models.CreateStaffTariff) (string, error)
+	UpdateStaffTariff(models.StaffTariff) (string, error)
+	GetStaffTariff(models.IdRequestStaffTariff) (models.StaffTariff, error)
+	GetAllStaffTariff(models.GetAllStaffTariffRequest) (models.GetAllStaffTariff, error)
+	DeleteStaffTariff(models.IdRequestStaffTariff) (string, error)
 }
 type StaffTransactionI interface {
 	//CreateBranch method creates new branch with given name and address and returns its id

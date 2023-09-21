@@ -1,6 +1,6 @@
 package models
 
-type CreateStaffTarif struct {
+type CreateStaffTariff struct {
 	Name          string
 	Type          int // fixed, percent
 	AmountForCash float64
@@ -8,7 +8,7 @@ type CreateStaffTarif struct {
 	FoundedAt     string
 }
 
-type StaffTarif struct {
+type StaffTariff struct {
 	Id            string
 	Name          string
 	Type          int // fixed, percent
@@ -18,18 +18,18 @@ type StaffTarif struct {
 	FoundedAt     string
 }
 
-type GetAllStaffTarifRequest struct {
-	Page  int
-	Limit int
+type GetAllStaffTariffRequest struct {
+	Page   int
+	Limit  int
 	Search string
-	Name  string
+	Name   string
 }
 
-type GetAllStaffTarif struct {
-	StaffTarifs []StaffTarif
+type GetAllStaffTariff struct {
+	StaffTariffs []StaffTariff
 	Count       int
 }
 
-type IdRequestStaffTarif struct {
+type IdRequestStaffTariff struct {
 	Id string
 }

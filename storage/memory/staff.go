@@ -147,3 +147,43 @@ func (s *staffRepo) DeleteStaff(req models.IdRequestStaff) (string, error) {
 
 	return "deleted", nil
 }
+
+func (s *staffRepo) UpdateBalance(req models.UpdateBalanceRequest) (string, error) {
+	tr, err:= s.db.Begin(context.Background())
+	defer func(){
+		if err!= nil {
+			tr.Rollback(context.Background())
+		}else{
+			tr.Commit(context.Background())
+		}
+	}()
+
+	cqb :=`
+	update staffs
+	set balance=+$2
+	where id=$1`
+	if req.TransactionType=="withdraw" {
+		req.Cashier.Amount = -req.Cashier.Amount
+		req.ShopAssisstant.Amount = -req.ShopAssisstant.Amount
+	}
+	_,err = tr.Exec(context.Background(), cqb, req.Cashier.StaffId, req.Cashier.Amount)
+	if err!=nil {
+		return "error exec", err
+	}
+	// strq := `
+	// insert into transactions(
+	// 	id,
+	// 	staff_id,
+	// 	sale_id,
+	// 	amount,
+	// 	type,
+	// 	source_type,
+	// 	text
+	// )`
+	// _, err := tr.Exec(context.Background(), strq,
+	//  uuid.NewString(), req)
+	if err!=nil {
+		return "error exec", err
+	}
+	return "balance updated", nil
+}
