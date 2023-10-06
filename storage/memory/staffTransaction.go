@@ -20,14 +20,21 @@ func NewStaffTransactionRepo(db *pgxpool.Pool) *staffTransactionRepo {
 	return &staffTransactionRepo{db: db}
 }
 
-func (s *staffTransactionRepo) CreateStaffTransaction(req models.CreateStaffTransaction) (string, error) {
+func (s *staffTransactionRepo) CreateStaffTransaction(ctx context.Context, req models.CreateStaffTransaction) (string, error) {
 	fmt.Println("staff create")
 	id := uuid.NewString()
-	query :=
-		`INSERT INTO 
-	staffTransactions(id,saleId,staffId,type,sourceType,amount,text,createdAt) 
-VALUES($1,$2,$3,$4,$5,$6,$7,$8)`
-	_, err := s.db.Exec(context.Background(), query,
+	query := `
+	INSERT INTO 
+		transactions(
+			id,
+			sale_id,
+			staff_id,
+			type,
+			source_type,
+			amount,text) 
+	VALUES($1,$2,$3,$4,$5,$6,$7)
+	`
+	_, err := s.db.Exec(ctx, query,
 		id,
 		req.SaleId,
 		req.StaffId,
@@ -43,12 +50,21 @@ VALUES($1,$2,$3,$4,$5,$6,$7,$8)`
 	return id, nil
 }
 
-func (s *staffTransactionRepo) UpdateStaffTransaction(req models.StaffTransaction) (string, error) {
+func (s *staffTransactionRepo) UpdateStaffTransaction(ctx context.Context, req models.StaffTransaction) (string, error) {
 	query := `
-	update staffTransactions
-	set saleId=$2,StaffId=$3,type=$4,sourceType=$5,amount=$6,text=$7
-	where id=$1`
-	resp, err := s.db.Exec(context.Background(), query,
+	UPDATE 
+		transactions
+	SET 
+		sale_id=$2,
+		staff_id=$3,
+		type=$4,
+		source_type=$5,
+		amount=$6,
+		text=$7
+	where 
+		id=$1
+	`
+	resp, err := s.db.Exec(ctx, query,
 		req.Id,
 		req.SaleId,
 		req.StaffId,
@@ -66,12 +82,21 @@ func (s *staffTransactionRepo) UpdateStaffTransaction(req models.StaffTransactio
 	return "Updated", nil
 }
 
-func (s *staffTransactionRepo) GetStaffTransaction(req models.IdRequestStaffTransaction) (models.StaffTransaction, error) {
+func (s *staffTransactionRepo) GetStaffTransaction(ctx context.Context, req models.IdRequestStaffTransaction) (models.StaffTransaction, error) {
 	query := `
-	select * from staffTransactions
-	where id=$1`
+	SELECT
+		sale_id,
+		staff_id,
+		type,
+		source_type,
+		amount,
+		text
+	FROM 
+		transactions
+	WHERE 
+		id=$1`
 	staffTransaction := models.StaffTransaction{}
-	err := s.db.QueryRow(context.Background(), query, req.Id).Scan(
+	err := s.db.QueryRow(ctx, query, req.Id).Scan(
 		&staffTransaction.Id,
 		&staffTransaction.SaleId,
 		&staffTransaction.StaffId,
@@ -85,7 +110,8 @@ func (s *staffTransactionRepo) GetStaffTransaction(req models.IdRequestStaffTran
 	}
 	return staffTransaction, errors.New("not found")
 }
-func (b *staffTransactionRepo) GetAllStaffTransaction(req models.GetAllStaffTransactionRequest) (resp models.GetAllStaffTransaction, err error) {
+
+func (b *staffTransactionRepo) GetAllStaffTransaction(ctx context.Context, req models.GetAllStaffTransactionRequest) (resp models.GetAllStaffTransaction, err error) {
 	var (
 		params  = make(map[string]interface{})
 		filter  = "WHERE true "
@@ -94,11 +120,18 @@ func (b *staffTransactionRepo) GetAllStaffTransaction(req models.GetAllStaffTran
 		offset  = (req.Page - 1) * req.Limit
 	)
 	s := `
-	SELECT *
-	FROM staffTransactions
+	SELECT
+		sale_id,
+		staff_id,
+		type,
+		source_type,
+		amount,
+		text
+	FROM 
+		transactions
 	`
 	if req.Search != "" {
-		filter += ` AND name ILIKE '%@search%' `
+		filter += ` AND name ILIKE '%' || @search || '%' `
 		params["search"] = req.Search
 	}
 	if req.Limit > 0 {
@@ -111,8 +144,7 @@ func (b *staffTransactionRepo) GetAllStaffTransaction(req models.GetAllStaffTran
 	query := s + filter + limit + offsetQ
 
 	q, pArr := helper.ReplaceQueryParams(query, params)
-
-	rows, err := b.db.Query(context.Background(), q, pArr...)
+	rows, err := b.db.Query(ctx, q, pArr...)
 	if err != nil {
 		return resp, err
 	}
@@ -129,19 +161,21 @@ func (b *staffTransactionRepo) GetAllStaffTransaction(req models.GetAllStaffTran
 	}
 	return resp, nil
 }
-func (s *staffTransactionRepo) DeleteStaffTransaction(req models.IdRequestStaffTransaction) (string, error) {
+
+func (s *staffTransactionRepo) DeleteStaffTransaction(ctx context.Context, req models.IdRequestStaffTransaction) (string, error) {
 	query := `
-	delete from staffTransaction
-	where id=$1 `
-	resp, err := s.db.Exec(context.Background(), query,
+	DELETE 
+		transactions
+	WHERE 
+		id=$1 `
+	resp, err := s.db.Exec(ctx, query,
 		req.Id,
 	)
 	if err != nil {
-		return "", err
+		return "error exec", err
 	}
 	if resp.RowsAffected() == 0 {
-		return "", pgx.ErrNoRows
+		return "error RowsAffected", pgx.ErrNoRows
 	}
-
 	return "deleted", nil
 }

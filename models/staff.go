@@ -1,23 +1,26 @@
 package models
 
 type CreateStaff struct {
-	Name      string
-	BranchId  string
-	TarifId   string
-	Type      int
-	Balance   float64
-	BirthDate string
+	Username string  `json:"username"`
+	Password string  `json:"password"`
+	Name     string  `json:"name"`
+	BranchId string  `json:"branch_id"`
+	TarifId  string  `json:"tarif_id"`
+	Type     int     `json:"type"`
+	Balance  float64 `json:"balance"`
 }
 
 type Staff struct {
-	Id        string
-	Name      string
-	BranchId  string
-	TarifId   string
-	Type      int // cashier, shopAssistant
-	Balance   float64
-	CreatedAt string
-	BirthDate string
+	Id        string  `json:"id"`
+	Username  string  `json:"username"`
+	Password  string  `json:"password"`
+	Name      string  `json:"name"`
+	BranchId  string  `json:"branch_id"`
+	TarifId   string  `json:"tarif_id"`
+	Type      int     `json:"type"`
+	Balance   float64 `json:"balance"`
+	CreatedAt string  `json:"created_at"`
+	UpdatedAt string  `json:"updated_at"`
 }
 
 type GetAllStaffRequest struct {
@@ -32,9 +35,18 @@ type GetAllStaff struct {
 	Count  int
 }
 type IdRequestStaff struct {
-	Id string
+	Id string `json:"id"`
 }
 
+// Login
+type RequestByUsername struct {
+	Username string
+}
+type LoginRes struct {
+	Token string `json:"token"`
+}
+
+// it's no use
 type ChangeBalanceStaff struct {
 	Id     string
 	Amount float64

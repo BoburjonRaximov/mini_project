@@ -10,8 +10,9 @@ type Handler struct {
 	strg storage.StorageI
 	cfg  config.Config
 	log  logger.LoggerI
+	redis  storage.CacheI
 }
 
-func NewHandler(strg storage.StorageI, cfg config.Config, log logger.LoggerI) *Handler {
-	return &Handler{strg: strg, cfg: cfg, log: log}
+func NewHandler(strg storage.StorageI, cfg config.Config, log logger.LoggerI,redis  storage.CacheI) *Handler {
+	return &Handler{strg: strg, cfg: cfg, log: log, redis: redis}
 }

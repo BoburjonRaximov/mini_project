@@ -3,6 +3,7 @@ package api
 import (
 	"new_project/api/docs"
 	"new_project/api/handler"
+	"new_project/pkg/helper"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -26,15 +27,17 @@ func NewServer(h *handler.Handler) *gin.Engine {
 	docs.SwaggerInfo.Host = "localhost:8080"
 	docs.SwaggerInfo.BasePath = ""
 	docs.SwaggerInfo.Schemes = []string{"http", "https"}
-	r.Use()
+
+	r.Use(helper.StartMiddleware)
 	r.POST("/branch", h.CreateBranch)
-	r.GET("/branch", h.GetAllBranch)
+	r.GET("/branch", h.GetAllBranch, helper.Logger)
 	r.GET("/branch/:id", h.GetBranch)
 	r.PUT("/branch/:id", h.UpdateBranch)
 	r.DELETE("/branch/:id", h.DeleteBranch)
 
+	r.Use(helper.Logger)
 	r.POST("/staff", h.CreateStaff)
-	r.GET("/staff", h.GetAllStaff)
+	r.GET("/staff", h.GetAllStaff, helper.AuthMiddleware)
 	r.GET("/staff/:id", h.GetStaff)
 	r.PUT("/staff/:id", h.UpdateStaff)
 	r.DELETE("/staff/:id", h.DeleteStaff)

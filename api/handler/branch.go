@@ -8,6 +8,7 @@ import (
 	"new_project/pkg/helper"
 	"new_project/pkg/logger"
 	"new_project/response"
+	"time"
 
 	"strconv"
 
@@ -35,7 +36,7 @@ func (h *Handler) CreateBranch(c *gin.Context) {
 		return
 	}
 	fmt.Println(h.strg)
-	resp, err := h.strg.Branch().CreateBranch(branch)
+	resp, err := h.strg.Branch().CreateBranch(c.Request.Context(),branch)
 	if err != nil {
 		fmt.Println("error Branch Create:", err.Error())
 		c.JSON(http.StatusInternalServerError, "internal server error")
@@ -59,17 +60,29 @@ func (h *Handler) CreateBranch(c *gin.Context) {
 // @Failure      500  {object}  response.ErrorResp
 func (h *Handler) GetBranch(c *gin.Context) {
 	fmt.Println("MethodGet")
-
+	branch :=	models.Branch{}
 	id := c.Param("id")
+	ok,err := h.redis.Cache().Get(c.Request.Context(),id,branch)
+	if  err!=nil{
+		fmt.Println("not found redis in cache")
+	}
+	if ok {
+		c.JSON(http.StatusOK, branch)
+		return
+	}
 
-	resp, err := h.strg.Branch().GetBranch(models.IdRequest{Id: id})
+	resp, err := h.strg.Branch().GetBranch(c.Request.Context(),models.IdRequest{Id: id})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		fmt.Println("error Branch Get:", err.Error())
 		return
 	}
-
 	c.JSON(http.StatusOK, resp)
+
+	err = h.redis.Cache().Create(c.Request.Context(),id,resp,5*time.Minute)
+	if err!=nil {
+		fmt.Println("error create redis", err.Error())
+	}
 }
 
 // ListAccounts godoc
@@ -94,13 +107,18 @@ func (h *Handler) UpdateBranch(c *gin.Context) {
 		return
 	}
 	branch.Id = c.Param("id")
-	resp, err := h.strg.Branch().UpdateBranch(branch)
+	resp, err := h.strg.Branch().UpdateBranch(c.Request.Context(),branch)
 	if err != nil {
 		fmt.Println("error Branch Update:", err.Error())
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+
+	err = h.redis.Cache().Delete(c.Request.Context(), branch.Id)
+	if err!= nil{
+		fmt.Println("error delete redis", err.Error())
+	}
 
 }
 
@@ -123,13 +141,18 @@ func (h *Handler) DeleteBranch(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "invalid id")
 		return
 	}
-	resp, err := h.strg.Branch().DeleteBranch(models.IdRequest{Id: id})
+	resp, err := h.strg.Branch().DeleteBranch(c.Request.Context(),models.IdRequest{Id: id})
 	if err != nil {
 		h.log.Error("error Branch Detete:", logger.Error(err))
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+
+	err = h.redis.Cache().Delete(c.Request.Context(), id)
+	if err!= nil{
+		fmt.Println("error delete redis", err.Error())
+	}
 }
 
 // ListAccounts godoc
@@ -160,7 +183,7 @@ func (h *Handler) GetAllBranch(c *gin.Context) {
 		return
 	}
 
-	resp, errs := h.strg.Branch().GetAllBranch(models.GetAllBranchRequest{
+	resp, errs := h.strg.Branch().GetAllBranch(c.Request.Context(),models.GetAllBranchRequest{
 		Page:    page,
 		Limit:   limit,
 		Search:  c.Query("search"),

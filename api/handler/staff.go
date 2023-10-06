@@ -8,6 +8,7 @@ import (
 	"new_project/pkg/helper"
 	"new_project/pkg/logger"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,7 +34,7 @@ func (h *Handler) CreateStaff(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "invalid body")
 		return
 	}
-	resp, err := h.strg.Staff().CreateStaff(staff)
+	resp, err := h.strg.Staff().CreateStaff(c.Request.Context(), staff)
 	if err != nil {
 		h.log.Error("error CreateStaff", logger.Error(err))
 		c.JSON(http.StatusInternalServerError, " error CreateStaff")
@@ -56,15 +57,30 @@ func (h *Handler) CreateStaff(c *gin.Context) {
 // @Failure      500  {object}  response.ErrorResp
 func (h *Handler) GetStaff(c *gin.Context) {
 	fmt.Println("Method GET")
+	staff := models.Staff{}
 	id := c.Param("id")
 
-	resp, err := h.strg.Staff().GetStaff(models.IdRequestStaff{Id: id})
+	ok, err := h.redis.Cache().Get(c.Request.Context(), id, staff)
+	if err != nil {
+		fmt.Println("not found redis in cache")
+	}
+	if ok {
+		c.JSON(http.StatusOK, staff)
+		return
+	}
+
+	resp, err := h.strg.Staff().GetStaff(c.Request.Context(), models.IdRequestStaff{Id: id})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		fmt.Println("error Staff Get:", err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+
+	err = h.redis.Cache().Create(c.Request.Context(), id, resp, 5*time.Minute)
+	if err != nil {
+		fmt.Println("error create redis", err.Error())
+	}
 }
 
 // ListAccounts godoc
@@ -90,13 +106,18 @@ func (h *Handler) UpdateStaff(c *gin.Context) {
 		return
 	}
 	staff.Id = c.Param("id")
-	resp, err := h.strg.Staff().UpdateStaff(staff)
+	resp, err := h.strg.Staff().UpdateStaff(c.Request.Context(), staff)
 	if err != nil {
 		fmt.Println("error Staff Update:", err.Error())
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+
+	err = h.redis.Cache().Delete(c.Request.Context(), staff.Id)
+	if err != nil {
+		fmt.Println("error delete redis", err.Error())
+	}
 }
 
 // ListAccounts godoc
@@ -119,13 +140,18 @@ func (h *Handler) DeleteStaff(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "invalid id")
 		return
 	}
-	resp, err := h.strg.Staff().DeleteStaff(models.IdRequestStaff{Id: id})
+	resp, err := h.strg.Staff().DeleteStaff(c.Request.Context(), models.IdRequestStaff{Id: id})
 	if err != nil {
 		h.log.Error("error Staff Delete:", logger.Error(err))
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+
+	err = h.redis.Cache().Delete(c.Request.Context(), id)
+	if err != nil {
+		fmt.Println("error delete redis", err.Error())
+	}
 }
 
 // ListAccounts godoc
@@ -157,7 +183,7 @@ func (h *Handler) GetAllStaff(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.strg.Staff().GetAllStaff(models.GetAllStaffRequest{
+	resp, err := h.strg.Staff().GetAllStaff(c.Request.Context(), models.GetAllStaffRequest{
 		Page:   page,
 		Limit:  limit,
 		Search: c.Query("search"),

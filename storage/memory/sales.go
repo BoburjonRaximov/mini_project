@@ -20,14 +20,21 @@ func NewSaleRepo(db *pgxpool.Pool) *saleRepo {
 	return &saleRepo{db: db}
 }
 
-func (s *saleRepo) CreateSale(req models.CreateSale) (string, error) {
+func (s *saleRepo) CreateSale(ctx context.Context, req models.CreateSale) (string, error) {
 	fmt.Println("staff create")
 	id := uuid.NewString()
-	query :=
-		`INSERT INTO 
-	sales(id,branchId,shopAssistantId,cashierId,price,paymentType,clientName) 
+	query :=`
+	INSERT INTO 
+		sales(
+			id,
+			branch_id,
+			shop_assistant_id,
+			cashier_id,
+			price,
+			payment_type,
+			client_name) 
 VALUES($1,$2,$3,$4,$5,$6,$7)`
-	_, err := s.db.Exec(context.Background(), query,
+	_, err := s.db.Exec(ctx, query,
 		id,
 		req.BranchId,
 		req.ShopAssistantId,
@@ -43,12 +50,20 @@ VALUES($1,$2,$3,$4,$5,$6,$7)`
 	return id, nil
 }
 
-func (s *saleRepo) UpdateSale(req models.Sale) (string, error) {
+func (s *saleRepo) UpdateSale(ctx context.Context,req models.Sale) (string, error) {
 	query := `
-	update sales
-	set branchId=$2,shopAssistantId=$3,cashierId=$4,price=$5,paymentType=$6,clientName=$7
-	where id=$1`
-	resp, err := s.db.Exec(context.Background(), query,
+	UPDATE 
+		sales
+	SET 
+		branch_id=$2,
+		shop_assistant_id=$3,
+		cashier_id=$4,
+		price=$5,
+		payment_type=$6,
+		client_name=$7
+	where 
+		id=$1`
+	resp, err := s.db.Exec(ctx, query,
 		req.Id,
 		req.BranchId,
 		req.ShopAssistantId,
@@ -66,12 +81,21 @@ func (s *saleRepo) UpdateSale(req models.Sale) (string, error) {
 	return "Updated", nil
 }
 
-func (s *saleRepo) GetSale(req models.IdRequestSale) (models.Sale, error) {
+func (s *saleRepo) GetSale(ctx context.Context,req models.IdRequestSale) (models.Sale, error) {
 	query := `
-	select * from sales
-	where id=$1`
+	SELECT
+		branch_id,
+		shop_assistant_id,
+		cashier_id,
+		price,
+		payment_type,
+		client_name
+	FROM 
+		sales
+	WHERE 
+		id=$1`
 	sale := models.Sale{}
-	err := s.db.QueryRow(context.Background(), query, req.Id).Scan(
+	err := s.db.QueryRow(ctx, query, req.Id).Scan(
 		&sale.Id,
 		&sale.BranchId,
 		&sale.ShopAssistantId,
@@ -86,7 +110,7 @@ func (s *saleRepo) GetSale(req models.IdRequestSale) (models.Sale, error) {
 	return sale, errors.New("not found")
 }
 
-func (b *saleRepo) GetAllSale(req models.GetAllSaleRequest) (resp models.GetAllSale, err error) {
+func (b *saleRepo) GetAllSale(ctx context.Context,req models.GetAllSaleRequest) (resp models.GetAllSale, err error) {
 	var (
 		params  = make(map[string]interface{})
 		filter  = "WHERE true "
@@ -95,11 +119,18 @@ func (b *saleRepo) GetAllSale(req models.GetAllSaleRequest) (resp models.GetAllS
 		offset  = (req.Page - 1) * req.Limit
 	)
 	s := `
-	SELECT *
-	FROM sales
+	SELECT
+		branch_id,
+		shop_assistant_id,
+		cashier_id,
+		price,
+		payment_type,
+		client_name
+	FROM 
+		sales
 	`
 	if req.Search != "" {
-		filter += ` AND name ILIKE '%@search%' `
+		filter += ` AND name ILIKE '%' || @search || '%' `
 		params["search"] = req.Search
 	}
 	if req.Limit > 0 {
@@ -113,7 +144,7 @@ func (b *saleRepo) GetAllSale(req models.GetAllSaleRequest) (resp models.GetAllS
 
 	q, pArr := helper.ReplaceQueryParams(query, params)
 
-	rows, err := b.db.Query(context.Background(), q, pArr...)
+	rows, err := b.db.Query(ctx, q, pArr...)
 	if err != nil {
 		return resp, err
 	}
@@ -130,12 +161,14 @@ func (b *saleRepo) GetAllSale(req models.GetAllSaleRequest) (resp models.GetAllS
 	}
 	return resp, nil
 }
-func (s *saleRepo) DeleteSale(req models.IdRequestSale) (string, error) {
+func (s *saleRepo) DeleteSale(ctx context.Context,req models.IdRequestSale) (string, error) {
 
 	query := `
-	delete from sales
-	where id=$1 `
-	resp, err := s.db.Exec(context.Background(), query,
+	DELETE FROM 
+		sales
+	WHERE 
+		id=$1 `
+	resp, err := s.db.Exec(ctx, query,
 		req.Id,
 	)
 	if err != nil {

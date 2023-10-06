@@ -1,7 +1,7 @@
 definitions:
   models.Branch:
     properties:
-      addres:
+      address:
         type: string
       id:
         type: string
@@ -35,18 +35,20 @@ definitions:
     properties:
       balance:
         type: number
-      birthDate:
-        type: string
-      branchId:
+      branch_id:
         type: string
       name:
         type: string
-      tarifId:
+      password:
+        type: string
+      tarif_id:
         type: string
       type:
         type: integer
+      username:
+        type: string
     type: object
-  models.CreateStaffTarif:
+  models.CreateStaffTariff:
     properties:
       amountForCard:
         type: number
@@ -104,13 +106,13 @@ definitions:
           $ref: '#/definitions/models.Staff'
         type: array
     type: object
-  models.GetAllStaffTarif:
+  models.GetAllStaffTariff:
     properties:
       count:
         type: integer
-      staffTarifs:
+      staffTariffs:
         items:
-          $ref: '#/definitions/models.StaffTarif'
+          $ref: '#/definitions/models.StaffTariff'
         type: array
     type: object
   models.GetAllStaffTransaction:
@@ -149,23 +151,26 @@ definitions:
     properties:
       balance:
         type: number
-      birthDate:
+      branch_id:
         type: string
-      branchId:
-        type: string
-      createdAt:
+      created_at:
         type: string
       id:
         type: string
       name:
         type: string
-      tarifId:
+      password:
+        type: string
+      tarif_id:
         type: string
       type:
-        description: cashier, shopAssistant
         type: integer
+      updated_at:
+        type: string
+      username:
+        type: string
     type: object
-  models.StaffTarif:
+  models.StaffTariff:
     properties:
       amountForCard:
         type: number
@@ -767,7 +772,7 @@ paths:
         name: staffTarif
         required: true
         schema:
-          $ref: '#/definitions/models.CreateStaffTarif'
+          $ref: '#/definitions/models.CreateStaffTariff'
       produces:
       - application/json
       responses:
@@ -790,11 +795,11 @@ paths:
       summary: updateda staffTarif
       tags:
       - staffTarifs
-  /staffTarif:
+  /staffTariff:
     get:
       consumes:
       - application/json
-      description: get staffTarif
+      description: get staffTariff
       parameters:
       - default: 10
         description: limit for response
@@ -814,7 +819,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.GetAllStaffTarif'
+            $ref: '#/definitions/models.GetAllStaffTariff'
         "400":
           description: Bad Request
           schema:
@@ -827,20 +832,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.ErrorResp'
-      summary: List staffTarif
+      summary: List staffTariff
       tags:
-      - staffTarifs
+      - staffTariffs
     post:
       consumes:
       - application/json
-      description: api for create staffTarif
+      description: api for create staffTariff
       parameters:
-      - description: date of staffTarif
+      - description: date of staffTariff
         in: body
-        name: staffTarif
+        name: staffTariff
         required: true
         schema:
-          $ref: '#/definitions/models.CreateStaffTarif'
+          $ref: '#/definitions/models.CreateStaffTariff'
       produces:
       - application/json
       responses:
@@ -860,16 +865,16 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.ErrorResp'
-      summary: create staffTarif
+      summary: create staffTariff
       tags:
-      - staffTarifs
-  /staffTarif/{id}:
+      - staffTariffs
+  /staffTariff/{id}:
     delete:
       consumes:
       - application/json
-      description: api fot delete staffTarif
+      description: api fot delete staffTariff
       parameters:
-      - description: id of staffTarif
+      - description: id of staffTariff
         in: path
         name: id
         required: true
@@ -893,15 +898,15 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.ErrorResp'
-      summary: delete staffTarif
+      summary: delete staffTariff
       tags:
-      - staffTarifs
+      - staffTariffs
     get:
       consumes:
       - application/json
-      description: get staffTarif
+      description: get staffTariff
       parameters:
-      - description: id of staffTarif
+      - description: id of staffTariff
         format: uuid
         in: path
         name: id
@@ -913,7 +918,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.StaffTarif'
+            $ref: '#/definitions/models.StaffTariff'
         "400":
           description: Bad Request
           schema:
@@ -926,9 +931,9 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.ErrorResp'
-      summary: get staffTarif
+      summary: get staffTariff
       tags:
-      - staffTarifs
+      - staffTariffs
   /staffTransaction:
     get:
       consumes:

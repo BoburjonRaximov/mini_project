@@ -8,6 +8,7 @@ import (
 	"new_project/pkg/helper"
 	"new_project/pkg/logger"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,7 +34,7 @@ func (h *Handler) CreateStaffTariff(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "invalid body")
 		return
 	}
-	resp, err := h.strg.StaffTariff().CreateStaffTariff(staffTariff)
+	resp, err := h.strg.StaffTariff().CreateStaffTariff(c.Request.Context(), staffTariff)
 	if err != nil {
 		h.log.Error("error CreateStaffTariff", logger.Error(err))
 		c.JSON(http.StatusInternalServerError, " error CreateStaffTariff")
@@ -56,15 +57,30 @@ func (h *Handler) CreateStaffTariff(c *gin.Context) {
 // @Failure      500  {object}  response.ErrorResp
 func (h *Handler) GetStaffTariff(c *gin.Context) {
 	fmt.Println("Method GET")
+	staffTarif := models.StaffTariff{}
 	id := c.Param("id")
 
-	resp, err := h.strg.StaffTariff().GetStaffTariff(models.IdRequestStaffTariff{Id: id})
+	ok, err := h.redis.Cache().Get(c.Request.Context(), id, staffTarif)
+	if err != nil {
+		fmt.Println("not found redis in cache")
+	}
+	if ok {
+		c.JSON(http.StatusOK, staffTarif)
+		return
+	}
+
+	resp, err := h.strg.StaffTariff().GetStaffTariff(c.Request.Context(), models.IdRequestStaffTariff{Id: id})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		fmt.Println("error StaffTariff Get:", err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+
+	err = h.redis.Cache().Create(c.Request.Context(), id, resp, 5*time.Minute)
+	if err != nil {
+		fmt.Println("error create redis", err.Error())
+	}
 }
 
 // ListAccounts godoc
@@ -75,7 +91,7 @@ func (h *Handler) GetStaffTariff(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        id    path     string  true  "id of staffTarif"
-// @Param        staffTarif    body     models.CreateStaffTarif  true  "id of staffTarif"
+// @Param        staffTarif    body     models.CreateStaffTariff  true  "id of staffTarif"
 // @Success      200  {strig}   string
 // @Failure      400  {object}  response.ErrorResp
 // @Failure      404  {object}  response.ErrorResp
@@ -90,13 +106,18 @@ func (h *Handler) UpdateStaffTariff(c *gin.Context) {
 		return
 	}
 	staffTariff.Id = c.Param("id")
-	resp, err := h.strg.StaffTariff().UpdateStaffTariff(staffTariff)
+	resp, err := h.strg.StaffTariff().UpdateStaffTariff(c.Request.Context(), staffTariff)
 	if err != nil {
 		fmt.Println("error StaffTariff Update:", err.Error())
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+
+	err = h.redis.Cache().Delete(c.Request.Context(), staffTariff.Id)
+	if err != nil {
+		fmt.Println("error delete redis", err.Error())
+	}
 }
 
 // ListAccounts godoc
@@ -119,13 +140,18 @@ func (h *Handler) DeleteStaffTariff(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "invalid id")
 		return
 	}
-	resp, err := h.strg.StaffTariff().DeleteStaffTariff(models.IdRequestStaffTariff{Id: id})
+	resp, err := h.strg.StaffTariff().DeleteStaffTariff(c.Request.Context(), models.IdRequestStaffTariff{Id: id})
 	if err != nil {
 		h.log.Error("error StaffTariff Delete:", logger.Error(err))
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+
+	err = h.redis.Cache().Delete(c.Request.Context(), id)
+	if err != nil {
+		fmt.Println("error delete redis", err.Error())
+	}
 }
 
 // ListAccounts godoc
@@ -157,7 +183,7 @@ func (h *Handler) GetAllStaffTariff(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.strg.StaffTariff().GetAllStaffTariff(models.GetAllStaffTariffRequest{
+	resp, err := h.strg.StaffTariff().GetAllStaffTariff(c.Request.Context(), models.GetAllStaffTariffRequest{
 		Page:   page,
 		Limit:  limit,
 		Search: c.Query("search"),

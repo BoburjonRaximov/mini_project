@@ -20,13 +20,20 @@ func NewStaffTariffRepo(db *pgxpool.Pool) *staffTariffRepo {
 	return &staffTariffRepo{db: db}
 }
 
-func (s *staffTariffRepo) CreateStaffTariff(req models.CreateStaffTariff) (string, error) {
+func (s *staffTariffRepo) CreateStaffTariff(ctx context.Context,req models.CreateStaffTariff) (string, error) {
 	id := uuid.NewString()
-	query :=
-		`INSERT INTO 
-	staffTariffs(id,name,type,amountForCash,amountForCard,createdAt,foundedAt) 
-VALUES($1,$2,$3,$4,$5,$6,$7)`
-	_, err := s.db.Exec(context.Background(), query,
+	query :=`
+	INSERT INTO 
+		tariffs(
+			id,
+			name,
+			type,
+			amount_for_cash,
+			amount_for_card,
+			created_at,
+			founded_at) 
+	VALUES($1,$2,$3,$4,$5,$6,$7)`
+	_, err := s.db.Exec(ctx, query,
 		id,
 		req.Name,
 		req.Type,
@@ -41,12 +48,20 @@ VALUES($1,$2,$3,$4,$5,$6,$7)`
 	return id, nil
 }
 
-func (s *staffTariffRepo) UpdateStaffTariff(req models.StaffTariff) (string, error) {
+func (s *staffTariffRepo) UpdateStaffTariff(ctx context.Context,req models.StaffTariff) (string, error) {
 	query := `
-	update staffTariffs
-	set name=$2,type=$3,amountForCash,AmountForCard=$5,createdAt=$6,foundedAt=$7
-	where id=$1`
-	resp, err := s.db.Exec(context.Background(), query,
+	UPDATE 
+		tariffs
+	 SET
+		name=$2,
+		type=$3,
+		amount_for_cash,
+		amount_for_card=$5,
+		created_at=$6,
+		founded_at=$7
+	WHERE 
+		id=$1`
+	resp, err := s.db.Exec(ctx, query,
 		req.Id,
 		req.Name,
 		req.Type,
@@ -56,20 +71,30 @@ func (s *staffTariffRepo) UpdateStaffTariff(req models.StaffTariff) (string, err
 		req.FoundedAt,
 	)
 	if err != nil {
-		return "", err
+		return "ERROR EXEC", err
 	}
 	if resp.RowsAffected() == 0 {
-		return "", pgx.ErrNoRows
+		return "error RowsAffected", pgx.ErrNoRows
 	}
 	return "updated", nil
 }
-func (s *staffTariffRepo) GetStaffTariff(req models.IdRequestStaffTariff) (models.StaffTariff, error) {
+
+func (s *staffTariffRepo) GetStaffTariff(ctx context.Context,req models.IdRequestStaffTariff) (models.StaffTariff, error) {
 
 	query := `
-	select * from staffTariffs
-	where id=$1`
+	SETECT
+		name,
+		type,
+		amount_for_cash,
+		amount_for_card,
+		created_at::text,
+		founded_at::text
+	FROM 
+		tariffs
+	WHERE
+		id=$1`
 	staffTariff := models.StaffTariff{}
-	err := s.db.QueryRow(context.Background(), query, req.Id).Scan(
+	err := s.db.QueryRow(ctx, query, req.Id).Scan(
 		&staffTariff.Id,
 		&staffTariff.Name,
 		&staffTariff.Type,
@@ -84,20 +109,27 @@ func (s *staffTariffRepo) GetStaffTariff(req models.IdRequestStaffTariff) (model
 	return staffTariff, errors.New("not found")
 }
 
-func (st *staffTariffRepo) GetAllStaffTariff(req models.GetAllStaffTariffRequest) (resp models.GetAllStaffTariff, err error) {
+func (st *staffTariffRepo) GetAllStaffTariff(ctx context.Context,req models.GetAllStaffTariffRequest) (resp models.GetAllStaffTariff, err error) {
 	var (
 		params  = make(map[string]interface{})
-		filter  = "WHERE true "
+		filter  = " WHERE true "
 		offsetQ = " OFFSET 0 "
 		limit   = " LIMIT 10 "
 		offset  = (req.Page - 1) * req.Limit
 	)
 	s := `
-	SELECT *
-	FROM staffTariffs
+	SELECT
+		name,
+		type,
+		amount_for_cash,
+		amount_for_card,
+		created_at::text,
+		founded_at::text
+	FROM 
+		tariffs
 	`
 	if req.Search != "" {
-		filter += ` AND name ILIKE '%@search%' `
+		filter += ` AND name ILIKE '%' || @search || '%' `
 		params["search"] = req.Search
 	}
 	if req.Limit > 0 {
@@ -111,7 +143,7 @@ func (st *staffTariffRepo) GetAllStaffTariff(req models.GetAllStaffTariffRequest
 
 	q, pArr := helper.ReplaceQueryParams(query, params)
 
-	rows, err := st.db.Query(context.Background(), q, pArr...)
+	rows, err := st.db.Query(ctx, q, pArr...)
 	if err != nil {
 		return resp, err
 	}
@@ -129,18 +161,20 @@ func (st *staffTariffRepo) GetAllStaffTariff(req models.GetAllStaffTariffRequest
 	return resp, nil
 }
 
-func (s *staffTariffRepo) DeleteStaffTariff(req models.IdRequestStaffTariff) (string, error) {
+func (s *staffTariffRepo) DeleteStaffTariff(ctx context.Context,req models.IdRequestStaffTariff) (string, error) {
 	query := `
-	delete from staffTariffs
-	where id=$1 `
-	resp, err := s.db.Exec(context.Background(), query,
+	DELETE FROM 
+		tariffs
+	WHERE 
+		id=$1 `
+	resp, err := s.db.Exec(ctx, query,
 		req.Id,
 	)
 	if err != nil {
-		return "", err
+		return "error exec", err
 	}
 	if resp.RowsAffected() == 0 {
-		return "", pgx.ErrNoRows
+		return "RowsAffected", pgx.ErrNoRows
 	}
 
 	return "deleted", nil

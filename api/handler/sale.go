@@ -8,6 +8,7 @@ import (
 	"new_project/pkg/helper"
 	"new_project/pkg/logger"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,7 +34,7 @@ func (h *Handler) CreateSale(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "invalid body")
 		return
 	}
-	resp, err := h.strg.Sale().CreateSale(sale)
+	resp, err := h.strg.Sale().CreateSale(c.Request.Context(), sale)
 	if err != nil {
 		h.log.Error("error CreateSale", logger.Error(err))
 		c.JSON(http.StatusInternalServerError, " error CreateSale")
@@ -56,15 +57,29 @@ func (h *Handler) CreateSale(c *gin.Context) {
 // @Failure      500  {object}  response.ErrorResp
 func (h *Handler) GetSale(c *gin.Context) {
 	fmt.Println("Method GET")
+	sale := models.Sale{}
 	id := c.Param("id")
+	ok, err := h.redis.Cache().Get(c.Request.Context(), id, sale)
+	if err != nil {
+		fmt.Println("not found redis in cache")
+	}
+	if ok {
+		c.JSON(http.StatusOK, sale)
+		return
+	}
 
-	resp, err := h.strg.Sale().GetSale(models.IdRequestSale{Id: id})
+	resp, err := h.strg.Sale().GetSale(c.Request.Context(), models.IdRequestSale{Id: id})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		fmt.Println("error Sale Get:", err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+
+	err = h.redis.Cache().Create(c.Request.Context(), id, resp, 5*time.Minute)
+	if err != nil {
+		fmt.Println("error create redis", err.Error())
+	}
 }
 
 // ListAccounts godoc
@@ -90,13 +105,19 @@ func (h *Handler) UpdateSale(c *gin.Context) {
 		return
 	}
 	sale.Id = c.Param("id")
-	resp, err := h.strg.Sale().UpdateSale(sale)
+	resp, err := h.strg.Sale().UpdateSale(c.Request.Context(), sale)
 	if err != nil {
 		fmt.Println("error Sale Update:", err.Error())
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+
+
+	err = h.redis.Cache().Delete(c.Request.Context(), sale.Id)
+	if err!= nil{
+		fmt.Println("error delete redis", err.Error())
+	}
 }
 
 // ListAccounts godoc
@@ -119,13 +140,18 @@ func (h *Handler) DeleteSale(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "invalid id")
 		return
 	}
-	resp, err := h.strg.Sale().DeleteSale(models.IdRequestSale{Id: id})
+	resp, err := h.strg.Sale().DeleteSale(c.Request.Context(), models.IdRequestSale{Id: id})
 	if err != nil {
 		h.log.Error("error Sale Delete:", logger.Error(err))
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+
+	err = h.redis.Cache().Delete(c.Request.Context(), id)
+	if err!= nil{
+		fmt.Println("error delete redis", err.Error())
+	}
 }
 
 // ListAccounts godoc
@@ -157,7 +183,7 @@ func (h *Handler) GetAllSale(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.strg.Sale().GetAllSale(models.GetAllSaleRequest{
+	resp, err := h.strg.Sale().GetAllSale(c.Request.Context(), models.GetAllSaleRequest{
 		Page:   page,
 		Limit:  limit,
 		Search: c.Query("search"),

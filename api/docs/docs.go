@@ -689,7 +689,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.CreateStaffTarif"
+                            "$ref": "#/definitions/models.CreateStaffTariff"
                         }
                     }
                 ],
@@ -877,9 +877,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/staffTarif": {
+        "/staffTariff": {
             "get": {
-                "description": "get staffTarif",
+                "description": "get staffTariff",
                 "consumes": [
                     "application/json"
                 ],
@@ -887,9 +887,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "staffTarifs"
+                    "staffTariffs"
                 ],
-                "summary": "List staffTarif",
+                "summary": "List staffTariff",
                 "parameters": [
                     {
                         "type": "integer",
@@ -912,7 +912,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.GetAllStaffTarif"
+                            "$ref": "#/definitions/models.GetAllStaffTariff"
                         }
                     },
                     "400": {
@@ -936,7 +936,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "api for create staffTarif",
+                "description": "api for create staffTariff",
                 "consumes": [
                     "application/json"
                 ],
@@ -944,17 +944,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "staffTarifs"
+                    "staffTariffs"
                 ],
-                "summary": "create staffTarif",
+                "summary": "create staffTariff",
                 "parameters": [
                     {
-                        "description": "date of staffTarif",
-                        "name": "staffTarif",
+                        "description": "date of staffTariff",
+                        "name": "staffTariff",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.CreateStaffTarif"
+                            "$ref": "#/definitions/models.CreateStaffTariff"
                         }
                     }
                 ],
@@ -986,9 +986,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/staffTarif/{id}": {
+        "/staffTariff/{id}": {
             "get": {
-                "description": "get staffTarif",
+                "description": "get staffTariff",
                 "consumes": [
                     "application/json"
                 ],
@@ -996,14 +996,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "staffTarifs"
+                    "staffTariffs"
                 ],
-                "summary": "get staffTarif",
+                "summary": "get staffTariff",
                 "parameters": [
                     {
                         "type": "string",
                         "format": "uuid",
-                        "description": "id of staffTarif",
+                        "description": "id of staffTariff",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1013,7 +1013,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.StaffTarif"
+                            "$ref": "#/definitions/models.StaffTariff"
                         }
                     },
                     "400": {
@@ -1037,7 +1037,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "api fot delete staffTarif",
+                "description": "api fot delete staffTariff",
                 "consumes": [
                     "application/json"
                 ],
@@ -1045,13 +1045,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "staffTarifs"
+                    "staffTariffs"
                 ],
-                "summary": "delete staffTarif",
+                "summary": "delete staffTariff",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "id of staffTarif",
+                        "description": "id of staffTariff",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1355,7 +1355,7 @@ const docTemplate = `{
         "models.Branch": {
             "type": "object",
             "properties": {
-                "addres": {
+                "address": {
                     "type": "string"
                 },
                 "id": {
@@ -1407,24 +1407,27 @@ const docTemplate = `{
                 "balance": {
                     "type": "number"
                 },
-                "birthDate": {
-                    "type": "string"
-                },
-                "branchId": {
+                "branch_id": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
                 },
-                "tarifId": {
+                "password": {
+                    "type": "string"
+                },
+                "tarif_id": {
                     "type": "string"
                 },
                 "type": {
                     "type": "integer"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         },
-        "models.CreateStaffTarif": {
+        "models.CreateStaffTariff": {
             "type": "object",
             "properties": {
                 "amountForCard": {
@@ -1512,16 +1515,16 @@ const docTemplate = `{
                 }
             }
         },
-        "models.GetAllStaffTarif": {
+        "models.GetAllStaffTariff": {
             "type": "object",
             "properties": {
                 "count": {
                     "type": "integer"
                 },
-                "staffTarifs": {
+                "staffTariffs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.StaffTarif"
+                        "$ref": "#/definitions/models.StaffTariff"
                     }
                 }
             }
@@ -1580,13 +1583,10 @@ const docTemplate = `{
                 "balance": {
                     "type": "number"
                 },
-                "birthDate": {
+                "branch_id": {
                     "type": "string"
                 },
-                "branchId": {
-                    "type": "string"
-                },
-                "createdAt": {
+                "created_at": {
                     "type": "string"
                 },
                 "id": {
@@ -1595,16 +1595,24 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "tarifId": {
+                "password": {
+                    "type": "string"
+                },
+                "tarif_id": {
                     "type": "string"
                 },
                 "type": {
-                    "description": "cashier, shopAssistant",
                     "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         },
-        "models.StaffTarif": {
+        "models.StaffTariff": {
             "type": "object",
             "properties": {
                 "amountForCard": {

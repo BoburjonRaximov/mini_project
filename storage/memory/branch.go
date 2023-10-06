@@ -20,15 +20,18 @@ func NewBranchRepo(db *pgxpool.Pool) *branchRepo {
 }
 
 
-func (b *branchRepo) CreateBranch(req models.CreateBranch) (string, error) {
+func (b *branchRepo) CreateBranch(ctx context.Context, req models.CreateBranch) (string, error) {
 	fmt.Println("branch create")
 	id := uuid.NewString()
 
 	query := `
 	INSERT INTO 
-		branches(id,name,address) 
+		branches(
+			id,
+			name,
+			adress) 
 	VALUES($1,$2,$3)`
-	_, err := b.db.Exec(context.Background(), query,
+	_, err := b.db.Exec(ctx, query,
 		id,
 		req.Name,
 		req.Address,
@@ -40,12 +43,16 @@ func (b *branchRepo) CreateBranch(req models.CreateBranch) (string, error) {
 	return id, nil
 }
 
-func (b *branchRepo) UpdateBranch(req models.Branch) (string, error) {
+func (b *branchRepo) UpdateBranch(ctx context.Context,req models.Branch) (string, error) {
 	query := `
-	UPDATE branches
-	SET name=$2,address=$3
-	WHERE id=$1`
-	resp, err := b.db.Exec(context.Background(), query,
+	UPDATE 
+		branches
+	SET 
+		name=$2,
+		adress=$3
+	WHERE 
+		id=$1`
+	resp, err := b.db.Exec(ctx, query,
 		req.Id,
 		req.Name,
 		req.Address,
@@ -59,11 +66,16 @@ func (b *branchRepo) UpdateBranch(req models.Branch) (string, error) {
 	return "OK", nil
 }
 
-func (b *branchRepo) GetBranch(req models.IdRequest) (models.Branch, error) {
+func (b *branchRepo) GetBranch(ctx context.Context,req models.IdRequest) (models.Branch, error) {
 	query := `
-	select * from branches
-	where id = $1`
-	resp := b.db.QueryRow(context.Background(), query,
+	SELECT
+		name,
+		adress
+	FROM 
+		branches
+	WHERE 
+		id = $1`
+	resp := b.db.QueryRow(ctx, query,
 		req.Id,
 	)
 	var branch models.Branch
@@ -77,20 +89,23 @@ func (b *branchRepo) GetBranch(req models.IdRequest) (models.Branch, error) {
 	}
 	return branch, nil
 }
-func (b *branchRepo) GetAllBranch(req models.GetAllBranchRequest) (resp models.GetAllBranch, err error) {
+func (b *branchRepo) GetAllBranch(ctx context.Context,req models.GetAllBranchRequest) (resp models.GetAllBranch, err error) {
 	var (
 		params  = make(map[string]interface{})
-		filter  = "WHERE true "
+		filter  = " WHERE true "
 		offsetQ = " OFFSET 0 "
 		limit   = " LIMIT 10 "
 		offset  = (req.Page - 1) * req.Limit
 	)
 	s := `
-	SELECT *
-	FROM branches
+	SELECT
+		name,
+		adress	
+	FROM 
+		branches
 	`
 	if req.Search != "" {
-		filter += ` AND name ILIKE '%@search%' `
+		filter += ` AND name ILIKE '%' || @search || '%' `
 		params["search"] = req.Search
 	}
 	if req.Limit > 0 {
@@ -104,7 +119,7 @@ func (b *branchRepo) GetAllBranch(req models.GetAllBranchRequest) (resp models.G
 
 	q, pArr := helper.ReplaceQueryParams(query, params)
 
-	rows, err := b.db.Query(context.Background(), q, pArr...)
+	rows, err := b.db.Query(ctx, q, pArr...)
 	if err != nil {
 		return resp, err
 	}
@@ -126,11 +141,13 @@ func (b *branchRepo) GetAllBranch(req models.GetAllBranchRequest) (resp models.G
 }
 
 // delete branch
-func (b *branchRepo) DeleteBranch(req models.IdRequest) (string, error) {
+func (b *branchRepo) DeleteBranch(ctx context.Context,req models.IdRequest) (string, error) {
 	query := `
-	delete from branches
-	where id=$1 `
-	resp, err := b.db.Exec(context.Background(), query,
+	DELETE FROM 
+		branches
+	WHERE 
+		id=$1 `
+	resp, err := b.db.Exec(ctx, query,
 		req.Id,
 	)
 	if err != nil {

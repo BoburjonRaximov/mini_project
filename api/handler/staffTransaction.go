@@ -8,6 +8,7 @@ import (
 	"new_project/pkg/helper"
 	"new_project/pkg/logger"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,7 +34,7 @@ func (h *Handler) CreateStaffTransaction(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "invalid body")
 		return
 	}
-	resp, err := h.strg.StaffTransaction().CreateStaffTransaction(staffTransaction)
+	resp, err := h.strg.StaffTransaction().CreateStaffTransaction(c.Request.Context(), staffTransaction)
 	if err != nil {
 		h.log.Error("error CreateStaffTransaction", logger.Error(err))
 		c.JSON(http.StatusInternalServerError, " error CreateStaffTransaction")
@@ -56,15 +57,30 @@ func (h *Handler) CreateStaffTransaction(c *gin.Context) {
 // @Failure      500  {object}  response.ErrorResp
 func (h *Handler) GetStaffTransaction(c *gin.Context) {
 	fmt.Println("Method GET")
+	staffTransaction := models.StaffTransaction{}
 	id := c.Param("id")
 
-	resp, err := h.strg.StaffTransaction().GetStaffTransaction(models.IdRequestStaffTransaction{Id: id})
+	ok, err := h.redis.Cache().Get(c.Request.Context(), id, staffTransaction)
+	if err != nil {
+		fmt.Println("not found redis in cache")
+	}
+	if ok {
+		c.JSON(http.StatusOK, staffTransaction)
+		return
+	}
+
+	resp, err := h.strg.StaffTransaction().GetStaffTransaction(c.Request.Context(), models.IdRequestStaffTransaction{Id: id})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		fmt.Println("error StaffTransaction Get:", err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+
+	err = h.redis.Cache().Create(c.Request.Context(), id, resp, 5*time.Minute)
+	if err != nil {
+		fmt.Println("error create redis", err.Error())
+	}
 }
 
 // ListAccounts godoc
@@ -90,13 +106,18 @@ func (h *Handler) UpdateStaffTransaction(c *gin.Context) {
 		return
 	}
 	staffTransaction.Id = c.Param("id")
-	resp, err := h.strg.StaffTransaction().UpdateStaffTransaction(staffTransaction)
+	resp, err := h.strg.StaffTransaction().UpdateStaffTransaction(c.Request.Context(), staffTransaction)
 	if err != nil {
 		fmt.Println("error StaffTransaction Update:", err.Error())
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+
+	err = h.redis.Cache().Delete(c.Request.Context(), staffTransaction.Id)
+	if err != nil {
+		fmt.Println("error delete redis", err.Error())
+	}
 }
 
 // ListAccounts godoc
@@ -119,13 +140,18 @@ func (h *Handler) DeleteStaffTransaction(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, "invalid id")
 		return
 	}
-	resp, err := h.strg.StaffTransaction().DeleteStaffTransaction(models.IdRequestStaffTransaction{Id: id})
+	resp, err := h.strg.StaffTransaction().DeleteStaffTransaction(c.Request.Context(), models.IdRequestStaffTransaction{Id: id})
 	if err != nil {
 		h.log.Error("error StaffTransaction Delete:", logger.Error(err))
 		c.JSON(http.StatusInternalServerError, "internal server error")
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+
+	err = h.redis.Cache().Delete(c.Request.Context(), id)
+	if err != nil {
+		fmt.Println("error delete redis", err.Error())
+	}
 }
 
 // ListAccounts godoc
@@ -157,7 +183,7 @@ func (h *Handler) GetAllStaffTransaction(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.strg.StaffTransaction().GetAllStaffTransaction(models.GetAllStaffTransactionRequest{
+	resp, err := h.strg.StaffTransaction().GetAllStaffTransaction(c.Request.Context(), models.GetAllStaffTransactionRequest{
 		Page:   page,
 		Limit:  limit,
 		Search: c.Query("search"),

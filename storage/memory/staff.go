@@ -20,21 +20,29 @@ func NewStaffRepo(db *pgxpool.Pool) *staffRepo {
 	return &staffRepo{db: db}
 }
 
-func (s *staffRepo) CreateStaff(req models.CreateStaff) (string, error) {
+func (s *staffRepo) CreateStaff(ctx context.Context, req models.CreateStaff) (string, error) {
 	fmt.Println("staff create")
 	id := uuid.NewString()
-	query :=
-		`INSERT INTO 
-	staffs(id,name,branchId,tarifId,type,balance,createdAt,birthDate) 
-VALUES($1,$2,$3,$4,$5,$6,$7,$8)`
-	_, err := s.db.Exec(context.Background(), query,
+	query := `
+	INSERT INTO 
+	  staffs(id,
+			name,
+			username,
+			password,
+			branch_id,
+			tariff_id,
+			type,
+			balance) 
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8)`
+	_, err := s.db.Exec(ctx, query,
 		id,
 		req.Name,
+		req.Username,
+		req.Password,
 		req.BranchId,
 		req.TarifId,
 		req.Type,
 		req.Balance,
-		req.BirthDate,
 	)
 	if err != nil {
 		fmt.Println("error:", err.Error())
@@ -43,42 +51,59 @@ VALUES($1,$2,$3,$4,$5,$6,$7,$8)`
 	return id, nil
 }
 
-func (s *staffRepo) UpdateStaff(req models.Staff) (string, error) {
+func (s *staffRepo) UpdateStaff(ctx context.Context, req models.Staff) (string, error) {
 	query := `
-	update staffs
-	set name=$2,branchId=$3,tarifId=$4,type=$5,balance=$6,createdAt=$7,birthDate=$8
-	where id=$1`
-	resp, err := s.db.Exec(context.Background(), query,
+	UPDATE
+		staffs
+	 SET 
+		name=$2,
+		branch_id=$3,
+		tarif_id=$4,
+		type=$5,
+		balance=$6,
+		updated_at=NOW()
+	WHERE 
+		id=$1`
+	resp, err := s.db.Exec(ctx, query,
 		req.Id,
 		req.Name,
 		req.BranchId,
 		req.TarifId,
 		req.Type,
 		req.Balance,
-		req.BirthDate,
 	)
 	if err != nil {
-		return "", err
+		return "ERROR EXEC", err
 	}
 	if resp.RowsAffected() == 0 {
-		return "", pgx.ErrNoRows
+		return "ERROR RowsAffected", pgx.ErrNoRows
 	}
 	return "Updated", nil
 }
 
-func (s *staffRepo) GetStaff(req models.IdRequestStaff) (models.Staff, error) {
+func (s *staffRepo) GetStaff(ctx context.Context, req models.IdRequestStaff) (models.Staff, error) {
 	query := `
-	select * from staffs
-	where id=$1`
+	SELECT
+		id,
+		name,
+		branch_id,
+		tariff_id,
+		type,
+		balance,
+		created_at::text,
+		updated_at::text
+	FROM
+		staffs
+	WHERE
+		id=$1`
 	staff := models.Staff{}
-	err := s.db.QueryRow(context.Background(), query, req.Id).Scan(
+	err := s.db.QueryRow(ctx, query, req.Id).Scan(
 		&staff.Id,
 		&staff.Name,
 		&staff.BranchId,
 		&staff.TarifId,
 		&staff.Type,
 		&staff.Balance,
-		&staff.BirthDate,
 	)
 	if err != nil {
 		fmt.Println("error scan", err.Error())
@@ -86,20 +111,29 @@ func (s *staffRepo) GetStaff(req models.IdRequestStaff) (models.Staff, error) {
 	return staff, errors.New("not found")
 }
 
-func (b *staffRepo) GetAllStaff(req models.GetAllStaffRequest) (resp models.GetAllStaff, err error) {
+func (b *staffRepo) GetAllStaff(ctx context.Context, req models.GetAllStaffRequest) (resp models.GetAllStaff, err error) {
 	var (
 		params  = make(map[string]interface{})
-		filter  = "WHERE true "
+		filter  = " WHERE true "
 		offsetQ = " OFFSET 0 "
 		limit   = " LIMIT 10 "
 		offset  = (req.Page - 1) * req.Limit
 	)
 	s := `
-	SELECT *
-	FROM staffs
+	SELECT
+		id,
+		name,
+		branch_id,
+		tariff_id,
+		type,
+		balance,
+		created_at::text,
+		updated_at::text	
+	FROM 
+		staffs
 	`
 	if req.Search != "" {
-		filter += ` AND name ILIKE '%@search%' `
+		filter += ` AND name ILIKE '%' || @search || '%' `
 		params["search"] = req.Search
 	}
 	if req.Limit > 0 {
@@ -113,7 +147,7 @@ func (b *staffRepo) GetAllStaff(req models.GetAllStaffRequest) (resp models.GetA
 
 	q, pArr := helper.ReplaceQueryParams(query, params)
 
-	rows, err := b.db.Query(context.Background(), q, pArr...)
+	rows, err := b.db.Query(ctx, q, pArr...)
 	if err != nil {
 		return resp, err
 	}
@@ -131,11 +165,13 @@ func (b *staffRepo) GetAllStaff(req models.GetAllStaffRequest) (resp models.GetA
 	return resp, nil
 }
 
-func (s *staffRepo) DeleteStaff(req models.IdRequestStaff) (string, error) {
+func (s *staffRepo) DeleteStaff(ctx context.Context, req models.IdRequestStaff) (string, error) {
 	query := `
-	delete from staffs
-	where id=$1 `
-	resp, err := s.db.Exec(context.Background(), query,
+	DELETE FROM 
+		staffs
+	WHERE 
+		id=$1 `
+	resp, err := s.db.Exec(ctx, query,
 		req.Id,
 	)
 	if err != nil {
@@ -148,26 +184,27 @@ func (s *staffRepo) DeleteStaff(req models.IdRequestStaff) (string, error) {
 	return "deleted", nil
 }
 
-func (s *staffRepo) UpdateBalance(req models.UpdateBalanceRequest) (string, error) {
-	tr, err:= s.db.Begin(context.Background())
-	defer func(){
-		if err!= nil {
-			tr.Rollback(context.Background())
-		}else{
-			tr.Commit(context.Background())
+// BALANCE
+func (s *staffRepo) UpdateBalance(ctx context.Context, req models.UpdateBalanceRequest) (string, error) {
+	tr, err := s.db.Begin(ctx)
+	defer func() {
+		if err != nil {
+			tr.Rollback(ctx)
+		} else {
+			tr.Commit(ctx)
 		}
 	}()
 
-	cqb :=`
+	cqb := `
 	update staffs
 	set balance=+$2
 	where id=$1`
-	if req.TransactionType=="withdraw" {
+	if req.TransactionType == "withdraw" {
 		req.Cashier.Amount = -req.Cashier.Amount
 		req.ShopAssisstant.Amount = -req.ShopAssisstant.Amount
 	}
-	_,err = tr.Exec(context.Background(), cqb, req.Cashier.StaffId, req.Cashier.Amount)
-	if err!=nil {
+	_, err = tr.Exec(ctx, cqb, req.Cashier.StaffId, req.Cashier.Amount)
+	if err != nil {
 		return "error exec", err
 	}
 	// strq := `
@@ -182,7 +219,7 @@ func (s *staffRepo) UpdateBalance(req models.UpdateBalanceRequest) (string, erro
 	// )`
 	// _, err := tr.Exec(context.Background(), strq,
 	//  uuid.NewString(), req)
-	if err!=nil {
+	if err != nil {
 		return "error exec", err
 	}
 	return "balance updated", nil
