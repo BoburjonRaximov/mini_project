@@ -32,8 +32,6 @@ CREATE TABLE "branches" (
   "id" uuid PRIMARY KEY,
   "name" varchar NOT NULL,
   "adress" varchar NOT NULL,
-  "year" int NOT NULL,   
-  "founded_at" int,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
